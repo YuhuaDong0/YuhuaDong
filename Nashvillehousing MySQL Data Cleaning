@@ -1,0 +1,125 @@
+CREATE DATABASE NashvilleHousing;
+-- Show columns from housing;
+ALTER TABLE housing MODIFY COLUMN
+PropertyAddress TEXT NULL;
+ALTER TABLE housing MODIFY COLUMN
+OwnerName TEXT NULL;
+ALTER TABLE housing MODIFY COLUMN
+OwnerAddress TEXT NULL;
+ALTER TABLE housing MODIFY COLUMN
+Acreage TEXT NULL;
+ALTER TABLE housing MODIFY COLUMN
+TaxDistrict TEXT NULL;
+ALTER TABLE housing MODIFY COLUMN
+LandValue TEXT NULL;
+ALTER TABLE housing MODIFY COLUMN
+BuildingValue TEXT NULL;
+ALTER TABLE housing MODIFY COLUMN
+TotalValue TEXT NULL;
+ALTER TABLE housing MODIFY COLUMN
+YearBuilt TEXT NULL;
+ALTER TABLE housing MODIFY COLUMN
+Bedrooms TEXT NULL;
+ALTER TABLE housing MODIFY COLUMN
+FullBath TEXT NULL;
+ALTER TABLE housing MODIFY COLUMN
+HalfBath TEXT NULL;
+ALTER TABLE housing MODIFY COLUMN
+SalePrice TEXT NULL;
+LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/NashvilleHousing.csv' into TABLE housing
+FIELDS TERMINATED BY ',' ENCLOSED BY '"' LINES TERMINATED BY '\r\n'
+IGNORE 1 Lines;
+
+-- Standardize Date Format
+SELECT date_format( Str_to_Date(SaleDate , "%M %e, %Y") , "%Y-%m-%d") as formatted_date
+FROM housing;
+update housing
+Set SaleDate = Date_Format( Str_to_Date(SaleDate , "%M %e, %Y") , "%Y-%m-%d");
+
+-- Null Address 
+SELECT a.ParcelID, a.PropertyAddress, b.ParcelID, b.PropertyAddress 
+FROM housing a 
+Join housing b
+On a.ParcelID= b.ParcelID
+And a.UniqueID != b.UniqueID
+Where a.PropertyAddress = '';
+
+
+CREATE TEMPORARY TABLE temp_housing AS (
+  SELECT h1.UniqueID, h2.PropertyAddress
+  FROM housing h1
+  JOIN housing h2 ON h1.ParcelID = h2.ParcelID
+  WHERE h1.PropertyAddress = '' AND h2.PropertyAddress != ''
+);
+
+UPDATE housing h1
+JOIN temp_housing th ON h1.UniqueID = th.UniqueID
+SET h1.PropertyAddress = th.PropertyAddress;
+
+
+-- Break address into address,city, state
+
+Select substring_index(PropertyAddress,',',1 ) as address,
+substring_index(PropertyAddress, ',', -1) as city
+From housing;
+
+Alter Table nashvillehousing.housing
+Add PropertyAddresss char(255);
+
+Update nashvillehousing.housing
+Set PropertyAddresss = substring_index(PropertyAddress,',',1 );
+
+Alter Table nashvillehousing.housing
+Add PropertyCityAddress char(255);
+
+Update nashvillehousing	.housing
+Set PropertyCityAddress = substring_index(PropertyAddress, ',', -1) ;
+
+Alter TABLE nashvillehousing.housing
+Drop Column PropertySAddress;
+
+Alter Table nashvillehousing.housing 
+Drop Column PropertyAddressCity;
+
+
+-- Owner address
+
+Select substring_index(OwnerAddress,',',1 ) as address,
+substring_index(substring_index(OwnerAddress, ',', -2), ',', 1) as city,
+substring_index(OwnerAddress, ',', -1) as state
+From housing;
+
+Alter Table nashvillehousing.housing
+Add OwnerAddresss char(255);
+
+Update nashvillehousing.housing
+Set OwnerAddresss = substring_index(OwnerAddress,',',1 );
+
+
+Alter Table nashvillehousing.housing
+Add OwnerAddressCity char(255);
+
+Update nashvillehousing.housing
+Set OwnerAddressCity = substring_index(substring_index(OwnerAddress, ',', -2), ',', 1);
+
+Alter Table nashvillehousing.housing
+Add OwnerAddressState char(255);
+
+Update nashvillehousing.housing
+Set OwnerAddressState = substring_index(OwnerAddress, ',', -1);
+
+-- SoldAsVacant column, format Y,N to Yes and No
+
+Select SoldAsVacant,
+Case When SoldAsVacant = 'Y' THEN 'Yes'
+	 When SoldAsVacant = 'N' THEN 'No'
+     ELSE SoldAsVacant
+     End
+From housing;
+
+Update housing
+Set SoldAsVacant = 
+Case When SoldAsVacant = 'Y' THEN 'Yes'
+	 When SoldAsVacant = 'N' THEN 'No'
+     ELSE SoldAsVacant
+     End;
