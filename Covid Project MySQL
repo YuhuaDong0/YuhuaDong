@@ -1,0 +1,99 @@
+Create DATABASE CovidProject;
+-- SHOW VARIABLES LIKE 'secure_file_priv';
+ALTER TABLE coviddeath MODIFY COLUMN population BIGINT;
+LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/coviddeath.csv' into TABLE coviddeath
+FIELDS TERMINATED BY ',' ENCLOSED BY '"' LINES TERMINATED BY '\r\n'
+IGNORE 1 Lines;
+-- SHOW COLUMNS FROM covidvax;
+ALTER TABLE covidvax MODIFY COLUMN
+iso_code TEXT NULL;
+ALTER TABLE covidvax MODIFY population_density TEXT NULL;
+ALTER TABLE covidvax MODIFY COLUMN
+median_age TEXT NULL;
+ALTER TABLE covidvax MODIFY COLUMN
+aged_65_older TEXT NULL;
+ALTER TABLE covidvax MODIFY COLUMN
+aged_70_older TEXT NULL;
+ALTER TABLE covidvax MODIFY COLUMN
+gdp_per_capita TEXT NULL;
+ALTER TABLE covidvax MODIFY COLUMN
+cardiovasc_death_rate TEXT NULL;
+ALTER TABLE covidvax MODIFY COLUMN
+diabetes_prevalence TEXT NULL;
+ALTER TABLE covidvax MODIFY COLUMN
+handwashing_facilities TEXT NULL;
+ALTER TABLE covidvax MODIFY COLUMN
+hospital_beds_per_thousand TEXT NULL;
+ALTER TABLE covidvax MODIFY COLUMN
+life_expectancy TEXT NULL;
+ALTER TABLE covidvax MODIFY COLUMN
+human_development_index TEXT NULL;
+LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/covidvax.csv' into TABLE covidvax
+FIELDS TERMINATED BY ',' ENCLOSED BY '"' LINES TERMINATED BY '\r\n'
+IGNORE 1 Lines;
+
+-- Likelihood of dying in Canada 
+SELECT location, date, total_cases, total_deaths, (total_deaths/total_cases)*100 as deathpercentage 
+FROM coviddeath
+WHERE location like '%Canada%'
+Order by 1,2;
+
+
+-- Compare Total cases and Population（infection rate）
+SELECT location, date, total_cases, population, (total_cases/population)*100 as InfectionRate
+FROM coviddeath
+group by location, date
+Order by 1,2
+limit 999999999999999;
+
+
+-- Find the country with the highest inflection rate
+SELECT location,MAX(total_cases) as MaxInflectionCount, population, MAX(total_cases/population) * 100 as InfectionRate 
+FROM coviddeath
+Group by location, population
+Order by InfectionRate desc;
+
+
+-- Find the country with the hightset Death Count per Population
+SELECT location, MAX(CAST(total_deaths AS unsigned)) as TotalDeathCount
+FROM coviddeath
+Group by location
+Order by TotalDeathCount desc
+LIMIT 300 offset 9;
+
+-- Death per population in continents
+SELECT continent, MAX(CAST(total_deaths AS unsigned)) as TotalDeathCount
+FROM coviddeath
+Group by continent
+Order by TotalDeathCount desc
+LIMIT 10 OFFSET 1;
+
+-- Continents with highest death count
+SELECT continent, MAX(CAST(total_deaths AS unsigned)) as TotalDeathCount
+FROM coviddeath
+Group by continent
+Order by TotalDeathCount desc
+LIMIT 10 OFFSET 1;
+
+-- Global numbers
+SELECT date, total_cases, total_deaths, (total_deaths/total_cases)*100 as deathpercentage 
+FROM coviddeath
+GROUP BY date
+Order by 1,2;
+
+-- Sum of global numbers
+SELECT SUM(new_cases)  as TotalCases, SUM(CAST(new_deaths as unsigned)) as TotalDeaths , Sum(cast(new_deaths as unsigned))/sum(new_cases)*100 as deathpercentage 
+FROM coviddeath
+Order by 1,2;
+
+
+
+-- Vaccination rate in the world
+SELECT cd.continent, cd.location, cd.date, cd.population, vax.new_vaccinations, total_vaccinations, (total_vaccinations/population)*100 as VaxRate
+FROM coviddeath cd
+JOIN covidvax vax
+ON cd.location= vax.location
+and cd.date = vax.date
+where cd.continent is not null
+ORDER BY 2,3 
+LIMIT 999999999999
